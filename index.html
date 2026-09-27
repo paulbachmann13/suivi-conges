@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Suivi congés</title>
+  <meta name="description" content="Placer et compter mes jours de congé pendant mon stage.">
+
+  <!-- PWA / iOS -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Congés">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="view-title">Calendrier</h1>
+    <div class="topbar-actions">
+      <span class="version" id="version-badge" title="Version de l'appli"></span>
+      <button class="icon-btn" id="btn-refresh" type="button" aria-label="Actualiser l'appli">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- =========================================================
+         1. CALENDRIER
+         ========================================================= -->
+    <section id="view-calendar" class="view" data-title="Calendrier">
+      <div class="summary card">
+        <div class="summary-main">
+          <p class="hero-value" id="kpi-remaining">0</p>
+          <p class="label" id="kpi-remaining-label">jours restants à placer</p>
+        </div>
+        <div class="gauge" aria-hidden="true">
+          <span id="gauge-taken" class="g-taken"></span>
+          <span id="gauge-planned" class="g-planned"></span>
+          <span id="gauge-free" class="g-free"></span>
+        </div>
+        <div class="summary-kpis">
+          <div><span class="key g-taken"></span>Pris <b id="kpi-taken">0 j</b></div>
+          <div><span class="key g-planned"></span>Prévus <b id="kpi-planned">0 j</b></div>
+          <div><span class="key g-free"></span>Total <b id="kpi-total">0 j</b></div>
+        </div>
+        <p class="warning" id="summary-warning" hidden></p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn btn-small btn-primary" id="btn-range" type="button">Poser une période</button>
+        <button class="btn btn-small" id="btn-today" type="button">Aujourd'hui</button>
+      </div>
+      <p class="hint" id="stage-range"></p>
+      <p class="hint">Touche un jour : <b>journée</b> → <b>demi-journée</b> → retiré. Les jours fériés et week-ends ne coûtent rien.</p>
+
+      <div class="legend">
+        <span><i class="sw sw-taken"></i>Pris</span>
+        <span><i class="sw sw-planned"></i>Prévu</span>
+        <span><i class="sw sw-half"></i>½ journée</span>
+        <span><i class="sw sw-holiday"></i>Férié / offert</span>
+      </div>
+
+      <div id="calendar" class="stack"></div>
+    </section>
+
+    <!-- =========================================================
+         2. BILAN
+         ========================================================= -->
+    <section id="view-report" class="view" data-title="Bilan" hidden>
+      <div class="kpis">
+        <div class="kpi card"><p class="label">Acquis à ce jour</p><p class="kpi-value" id="rep-acquired">0 j</p></div>
+        <div class="kpi card"><p class="label">Solde aujourd'hui</p><p class="kpi-value" id="rep-balance">0 j</p><p class="hint">acquis − déjà pris</p></div>
+      </div>
+      <p class="hint" id="rep-rule"></p>
+      <p class="warning" id="rep-warning" hidden></p>
+
+      <h2>Mes congés</h2>
+      <div id="periods" class="stack"></div>
+
+      <h2>Mois par mois</h2>
+      <p class="hint">Les congés s'acquièrent au fil du stage. Un solde négatif = congés posés en avance.</p>
+      <div class="card table-card" id="monthly"></div>
+
+      <h2>Ponts</h2>
+      <div id="bridges" class="card stack"></div>
+
+      <h2>Jours fériés du stage</h2>
+      <div id="holidays" class="card"></div>
+    </section>
+
+    <!-- =========================================================
+         3. RÉGLAGES
+         ========================================================= -->
+    <section id="view-settings" class="view" data-title="Réglages" hidden>
+      <div class="banner" id="settings-intro" hidden>
+        <p>Bienvenue ! Saisis les dates de ton stage pour commencer.</p>
+      </div>
+
+      <form id="settings-form" class="form card" novalidate>
+        <h2 class="card-title">Mon stage</h2>
+        <div class="row">
+          <label>Début<input type="date" name="start" required></label>
+          <label>Fin<input type="date" name="end" required></label>
+        </div>
+        <div class="row">
+          <label>Jours acquis / mois<input type="text" name="rate" inputmode="decimal" placeholder="2,5"></label>
+          <label>Ajustement (± j)<input type="text" name="adjust" inputmode="decimal" placeholder="0"></label>
+        </div>
+        <label>Jours fériés
+          <select name="region">
+            <option value="DE-NW">Allemagne – NRW</option>
+            <option value="FR">France</option>
+            <option value="none">Aucun</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="countSaturday"> Décompter le samedi (jours ouvrables)</label>
+        <p class="hint" id="settings-preview"></p>
+        <p class="error" id="settings-error"></p>
+        <button class="btn btn-primary" type="submit">Enregistrer</button>
+      </form>
+
+      <div class="card form">
+        <h2 class="card-title">Jours offerts / fermeture</h2>
+        <p class="hint">Ex. 24 et 31 décembre, pont offert par l'entreprise : ces jours ne coûtent pas de congé.</p>
+        <div class="row">
+          <label>Date<input type="date" id="closed-date"></label>
+          <button class="btn btn-small" id="closed-add" type="button">Ajouter</button>
+        </div>
+        <div id="closed-list"></div>
+      </div>
+
+      <div class="card stack">
+        <button class="btn" id="btn-export" type="button">Exporter une sauvegarde</button>
+        <label class="btn" for="import-file">Importer une sauvegarde</label>
+        <input type="file" id="import-file" accept="application/json,.json" class="visually-hidden">
+        <button class="btn" id="btn-theme" type="button">Passer en thème clair</button>
+        <button class="btn btn-danger" id="btn-clear" type="button">Effacer tous les congés posés</button>
+      </div>
+      <p class="hint center" id="app-version"></p>
+    </section>
+  </main>
+
+  <!-- Poser une période -->
+  <dialog id="range-dialog">
+    <form id="range-form" class="form" novalidate>
+      <h2>Poser une période</h2>
+      <div class="row">
+        <label>Du<input type="date" name="from"></label>
+        <label>Au<input type="date" name="to"></label>
+      </div>
+      <div class="segmented">
+        <label><input type="radio" name="mode" value="add" checked><span>Poser</span></label>
+        <label><input type="radio" name="mode" value="remove"><span>Retirer</span></label>
+      </div>
+      <p class="hint" id="range-preview"></p>
+      <p class="error" id="range-error"></p>
+      <div class="row">
+        <button class="btn" type="button" id="btn-range-cancel">Annuler</button>
+        <button class="btn btn-primary" type="submit">Valider</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="banner banner-update" id="update-banner" hidden>
+    <p>Nouvelle version disponible.</p>
+    <button class="btn btn-small btn-primary" id="btn-reload" type="button">Recharger</button>
+  </div>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <nav class="tabbar">
+    <a href="#" data-view="calendar" class="active">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      Calendrier
+    </a>
+    <a href="#" data-view="report">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+      Bilan
+    </a>
+    <a href="#" data-view="settings">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
